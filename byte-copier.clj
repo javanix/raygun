@@ -39,29 +39,32 @@
     (send-to (.getSelectedFile f) 31023)))
 
 
+(defn serve-one-echo [client-socket]
+  (let [in (.getInputStream client-socket)
+        out (.getOutputStream client-socket)]
+    (loop [c (.read in)]
+      (if (not (= -1 c))
+        (do
+          (.write out c)
+          (recur (.read in)))))
+    (.close in)
+    (.close out)
+    (.close client-socket)))
+    
+
 (defn recv-from 
   ([file] (recv-from file 31023))
   ([file port] 
-     (let [servSock (new ServerSocket port)
-	   cliSock (.accept servSock)
-	   in (.getInputStream cliSock)
-	   out (new FileOutputStream file)]
-       (loop [c (.read in)]
-	 (if (not (= -1 c))
-	   (do
-	     (.write out c)
-	     (recur (.read in)))))
-       (.close out)
-       (.close in)
-       (.close servSock)
-       (.close cliSock))))
+     (let [servSock (new ServerSocket port)]
+       (loop []
+         (serve-one-echo (.accept servSock))
+         (recur)))))
+                           
 
 (defn speed-test []
   (let [f "test.dat"
-	o "test.dat.arrived"
-	servThread (new Thread (fn [] (recv-from o)))]
+        o "test.dat.arrived"
+        servThread (new Thread (fn [] (recv-from o)))]
     (.run servThread)
-    (time
-     (send-to f 31023))))
-    
-	
+    (.join servThread)
+    (send-to f 31023)))
