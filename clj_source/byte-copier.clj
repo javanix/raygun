@@ -17,6 +17,7 @@
 
 
 (defn send-to
+  ([file] (send-to file 31023 "127.0.0.1"))
   ([file port] (send-to file port "127.0.0.1"))
   ([file port addr]
      (let [sock (new Socket addr port)
